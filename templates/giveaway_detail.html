@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Розыгрыш {{ giveaway_id[:10] }}... - MysteryBox Bot{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-gift"></i> 
+                    {{ giveaway.get('title', 'Без названия') }}
+                    {% if giveaway.get('ended', False) %}
+                        <span class="badge bg-info ms-2">Завершен</span>
+                    {% else %}
+                        <span class="badge bg-success ms-2">Активный</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>ID розыгрыша:</strong></div>
+                    <div class="col-sm-9"><code>{{ giveaway_id }}</code></div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Описание:</strong></div>
+                    <div class="col-sm-9">{{ giveaway.get('description', 'Нет описания') }}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Сервер:</strong></div>
+                    <div class="col-sm-9">{{ giveaway.get('guild_name', 'Неизвестно') }}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Канал:</strong></div>
+                    <div class="col-sm-9">#{{ giveaway.get('channel_name', 'неизвестный-канал') }}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Создал:</strong></div>
+                    <div class="col-sm-9">{{ giveaway.get('creator_name', 'Неизвестно') }}</div>
+                </div>
+                
+                {% if giveaway.get('end_time') %}
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Время окончания:</strong></div>
+                    <div class="col-sm-9">{{ giveaway.end_time }}</div>
+                </div>
+                {% endif %}
+                
+                {% if giveaway.get('ended', False) and giveaway.get('winner') %}
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Победитель:</strong></div>
+                    <div class="col-sm-9">
+                        <span class="text-success">
+                            <i class="fas fa-crown"></i> {{ giveaway.winner.get('username', 'Неизвестно') }}
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if giveaway.get('selected_prize') %}
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Выбранный приз:</strong></div>
+                    <div class="col-sm-9">
+                        <span class="badge bg-warning text-dark">{{ giveaway.selected_prize }}</span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-users"></i> 
+                    Участники ({{ giveaway.get('participants', [])|length }})
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if giveaway.get('participants') %}
+                    <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                        {% for participant in giveaway.participants %}
+                        <div class="list-group-item border-0 px-0 py-1">
+                            <i class="fas fa-user fa-sm text-muted me-2"></i>
+                            {{ participant.get('username', 'Неизвестный пользователь') }}
+                            {% if giveaway.get('ended', False) and giveaway.get('winner') and giveaway.winner.get('id') == participant.get('id') %}
+                                <i class="fas fa-crown text-warning ms-2" title="Победитель"></i>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-user-slash fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Нет участников</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if giveaway.get('prizes') %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-trophy"></i> 
+                    Призы
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for prize in giveaway.prizes %}
+                    <div class="list-group-item border-0 px-0 py-1">
+                        <i class="fas fa-gift fa-sm text-muted me-2"></i>
+                        {{ prize }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <a href="/" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Назад к панели управления
+        </a>
+    </div>
+</div>
+{% endblock %}

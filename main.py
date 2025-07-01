@@ -150,5 +150,8 @@ def main():
     except Exception as e:
         logger.error(f"Fatal error: {e}")
 
+# Flask app for web interface
+from web_interface import app
+
 if __name__ == "__main__":
     main()

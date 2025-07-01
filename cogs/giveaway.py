@@ -236,7 +236,8 @@ class GiveawayCog(commands.Cog):
                 )
                 logger.info(f"Restored giveaway {giveaway_id} with {seconds_left:.2f} seconds left")
 
-                # Note: UI Views are now restored via persistent views registration
+                # Restore UI View for this giveaway
+                asyncio.create_task(self.restore_giveaway_view(giveaway_id, giveaway))
             else:
                 # This giveaway should have ended already
                 asyncio.create_task(self.end_giveaway(giveaway_id))
