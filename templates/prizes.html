@@ -66,8 +66,8 @@
                     <i class="fas fa-list"></i> Список призов
                 </h5>
                 <div>
-                    <button class="btn btn-success btn-sm me-2" onclick="showAddPrizeModal()">
-                        <i class="fas fa-plus"></i> Добавить приз
+                    <button class="btn btn-success btn-sm me-2" onclick="showCreatePrizeListModal()">
+                        <i class="fas fa-plus"></i> Добавить новый список
                     </button>
                     <button class="btn btn-outline-primary btn-sm me-2" onclick="toggleView()">
                         <i class="fas fa-th" id="viewIcon"></i> <span id="viewText">Карточки</span>
@@ -169,6 +169,19 @@
                     <i class="fas fa-trophy fa-5x text-muted mb-4"></i>
                     <h3 class="text-muted">Призы не найдены</h3>
                     <p class="text-muted">Призы добавляются через Discord бот командой <code>/mysterybox_add_prize</code></p>
+                    
+                    <!-- Drag and Drop File Upload Area -->
+                    <div class="mt-4">
+                        <div id="dropZone" class="border border-dashed border-2 rounded p-4 text-center" 
+                             style="border-color: var(--bs-primary) !important; cursor: pointer;"
+                             onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                            <h5 class="text-primary">Загрузить список призов</h5>
+                            <p class="text-muted mb-0">Перетащите файл сюда или нажмите для выбора</p>
+                            <p class="text-muted small">Поддерживаются файлы .txt с призами (по одному на строку)</p>
+                        </div>
+                        <input type="file" id="fileInput" accept=".txt" style="display: none;">
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -427,8 +440,8 @@ function toggleView() {
 }
 
 // Prize usage chart
-const usedPrizes = {{ prizes|selectattr('used', 'defined')|selectattr('used')|list|length }};
-const availablePrizes = {{ (prizes|length) - (prizes|selectattr('used', 'defined')|selectattr('used')|list|length) }};
+const usedPrizes = {{ prizes|selectattr('used', 'defined')|selectattr('used')|list|length|tojson }};
+const availablePrizes = {{ ((prizes|length) - (prizes|selectattr('used', 'defined')|selectattr('used')|list|length))|tojson }};
 
 const prizeCtx = document.getElementById('prizeChart').getContext('2d');
 const prizeChart = new Chart(prizeCtx, {
@@ -673,6 +686,106 @@ function removePrizeList(listId) {
     })
     .catch(error => {
         alert('Ошибка при удалении списка призов: ' + error);
+    });
+}
+
+// File Upload Functions
+document.addEventListener('DOMContentLoaded', function() {
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    
+    if (dropZone && fileInput) {
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        // Highlight drop zone when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        // Handle dropped files
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        // Handle file input change
+        fileInput.addEventListener('change', function(e) {
+            handleFiles(e.target.files);
+        });
+    }
+});
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function highlight(e) {
+    document.getElementById('dropZone').style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
+}
+
+function unhighlight(e) {
+    document.getElementById('dropZone').style.backgroundColor = '';
+}
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    handleFiles(files);
+}
+
+function handleFiles(files) {
+    if (files.length === 0) return;
+    
+    const file = files[0];
+    if (!file.name.endsWith('.txt')) {
+        alert('Пожалуйста, выберите текстовый файл (.txt)');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const content = e.target.result;
+        // Generate a random ID for the list
+        const listId = 'list_' + Date.now();
+        const listName = file.name.replace('.txt', '');
+        
+        // Show confirmation dialog
+        if (confirm(`Создать новый список призов "${listName}" с ${content.split('\n').filter(line => line.trim()).length} призами?`)) {
+            uploadPrizeList(listId, listName, content);
+        }
+    };
+    reader.readAsText(file);
+}
+
+function uploadPrizeList(listId, listName, content) {
+    fetch('/api/prize-lists/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            list_id: listId,
+            list_name: listName,
+            prize_content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка при создании списка призов: ' + error);
     });
 }
 </script>
