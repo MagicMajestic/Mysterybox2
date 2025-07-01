@@ -16,23 +16,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Helper function to safely get modal
 function safeGetModal(modalId) {
-    const modalElement = document.getElementById(modalId);
-    if (!modalElement) {
-        console.error(`Модальное окно с ID "${modalId}" не найдено`);
-        return null;
+    console.log('Поиск модального окна:', modalId);
+    
+    // Wait a bit for DOM to be fully ready
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    function findModal() {
+        attempts++;
+        const modalElement = document.getElementById(modalId);
+        
+        if (!modalElement) {
+            if (attempts < maxAttempts) {
+                console.log(`Попытка ${attempts}: элемент ${modalId} не найден, повтор через 100мс`);
+                setTimeout(findModal, 100);
+                return;
+            }
+            console.error(`Модальное окно с ID "${modalId}" не найдено после ${maxAttempts} попыток`);
+            console.log('Доступные элементы с ID modal:', document.querySelectorAll('[id*="modal"]'));
+            return null;
+        }
+        
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap не загружен');
+            return null;
+        }
+        
+        try {
+            console.log('Создание модального окна для:', modalId);
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+            return modal;
+        } catch (error) {
+            console.error('Ошибка создания модального окна:', error);
+            return null;
+        }
     }
     
-    if (typeof bootstrap === 'undefined') {
-        console.error('Bootstrap не загружен');
-        return null;
-    }
-    
-    try {
-        return new bootstrap.Modal(modalElement);
-    } catch (error) {
-        console.error('Ошибка создания модального окна:', error);
-        return null;
-    }
+    findModal();
+    return null; // Возвращаем null, так как это асинхронная операция
 }
 
 // Toggle between table and card view
@@ -94,12 +116,7 @@ function initializePrizeChart() {
 
 // Prize Management Functions
 function showAddPrizeModal() {
-    const modal = safeGetModal('addPrizeModal');
-    if (modal) {
-        modal.show();
-    } else {
-        alert('Ошибка: не удалось открыть форму добавления приза');
-    }
+    safeGetModal('addPrizeModal');
 }
 
 function addPrize() {
@@ -161,12 +178,7 @@ function removePrize(prizeId) {
 
 // Prize List Management Functions
 function showCreatePrizeListModal() {
-    const modal = safeGetModal('createPrizeListModal');
-    if (modal) {
-        modal.show();
-    } else {
-        alert('Ошибка: не удалось открыть форму создания списка');
-    }
+    safeGetModal('createPrizeListModal');
 }
 
 function createPrizeList() {
@@ -224,12 +236,7 @@ function viewPrizeList(listId) {
             `;
         }
         
-        const modal = safeGetModal('viewPrizeListModal');
-        if (modal) {
-            modal.show();
-        } else {
-            alert('Ошибка: не удалось открыть окно просмотра');
-        }
+        safeGetModal('viewPrizeListModal');
     })
     .catch(error => {
         console.error('Ошибка при загрузке списка призов:', error);
@@ -260,12 +267,7 @@ function editPrizeList(listId) {
             return;
         }
         
-        const modal = safeGetModal('editPrizeListModal');
-        if (modal) {
-            modal.show();
-        } else {
-            alert('Ошибка: не удалось открыть форму редактирования');
-        }
+        safeGetModal('editPrizeListModal');
     })
     .catch(error => {
         console.error('Ошибка при загрузке списка призов:', error);
