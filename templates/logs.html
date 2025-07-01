@@ -1,33 +1,183 @@
 {% extends "base.html" %}
 
-{% block title %}Логи бота - MysteryBox Bot{% endblock %}
+{% block title %}Логи бота - Majestic Party San Francisco{% endblock %}
 
 {% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-file-alt text-primary"></i> 
+                Логи бота
+            </h1>
+            <div>
+                <button class="btn btn-outline-primary me-2" onclick="refreshLogs()">
+                    <i class="fas fa-sync-alt"></i> Обновить
+                </button>
+                <a href="/" class="btn btn-outline-primary">
+                    <i class="fas fa-tachometer-alt"></i> Панель управления
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Controls -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter"></i> Фильтры
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showInfo" checked onchange="filterLogs()">
+                            <label class="form-check-label" for="showInfo">
+                                <i class="fas fa-info-circle text-info"></i> INFO
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showWarning" checked onchange="filterLogs()">
+                            <label class="form-check-label" for="showWarning">
+                                <i class="fas fa-exclamation-triangle text-warning"></i> WARNING
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showError" checked onchange="filterLogs()">
+                            <label class="form-check-label" for="showError">
+                                <i class="fas fa-times-circle text-danger"></i> ERROR
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="showDebug" onchange="filterLogs()">
+                            <label class="form-check-label" for="showDebug">
+                                <i class="fas fa-bug text-secondary"></i> DEBUG
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-search"></i> Поиск
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Поиск в логах..." onkeyup="searchLogs()">
+                    <button class="btn btn-outline-primary" onclick="clearSearch()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <small class="text-muted">Поиск по содержимому логов</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logs Display -->
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-file-alt"></i> Логи бота (последние 100 строк)</h5>
-                <button class="btn btn-sm btn-primary" onclick="location.reload()">
-                    <i class="fas fa-sync-alt"></i> Обновить
-                </button>
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> Последние логи
+                </h5>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm me-2" onclick="toggleAutoRefresh()">
+                        <i class="fas fa-play" id="autoRefreshIcon"></i> 
+                        <span id="autoRefreshText">Авто-обновление</span>
+                    </button>
+                    <span class="badge bg-info" id="logCount">{{ logs|length }} записей</span>
+                </div>
             </div>
             <div class="card-body p-0">
-                <div class="log-container" style="height: 600px; overflow-y: auto; background-color: #1e1e1e; color: #d4d4d4;">
-                    {% if logs %}
-                        {% for log in logs %}
-                            <div class="log-line {% if 'ERROR' in log %}log-error{% elif 'WARNING' in log %}log-warning{% elif 'INFO' in log %}log-info{% endif %}">
-                                {{ log.strip() }}
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-exclamation-triangle fa-3x text-muted mb-3"></i>
-                            <h5>Логи не найдены</h5>
-                            <p class="text-muted">Файл логов не найден или пуст</p>
-                        </div>
-                    {% endif %}
+                {% if logs %}
+                <div id="logsContainer" style="max-height: 600px; overflow-y: auto; background: var(--primary-bg);">
+                    {% for log in logs %}
+                    <div class="log-line 
+                        {% if 'ERROR' in log %}log-error{% endif %}
+                        {% if 'WARNING' in log %}log-warning{% endif %}
+                        {% if 'INFO' in log %}log-info{% endif %}
+                        " data-level="
+                        {% if 'ERROR' in log %}error{% endif %}
+                        {% if 'WARNING' in log %}warning{% endif %}
+                        {% if 'INFO' in log %}info{% endif %}
+                        {% if 'DEBUG' in log %}debug{% endif %}
+                        ">
+                        {% set log_parts = log.strip().split(' - ') %}
+                        {% if log_parts|length >= 3 %}
+                        <span class="text-muted me-2">{{ log_parts[0] }}</span>
+                        <span class="badge 
+                            {% if 'ERROR' in log %}bg-danger{% endif %}
+                            {% if 'WARNING' in log %}bg-warning text-dark{% endif %}
+                            {% if 'INFO' in log %}bg-info{% endif %}
+                            {% if 'DEBUG' in log %}bg-secondary{% endif %}
+                            me-2">{{ log_parts[2] }}</span>
+                        <span>{{ log_parts[3:] | join(' - ') }}</span>
+                        {% else %}
+                        <span>{{ log.strip() }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
                 </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-5x text-muted mb-4"></i>
+                    <h3 class="text-muted">Логи не найдены</h3>
+                    <p class="text-muted">Логи будут отображаться здесь при работе бота</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Statistics -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <div class="stats-number text-info" id="infoCount">0</div>
+                <h6 class="text-muted">INFO</h6>
+                <i class="fas fa-info-circle fa-2x text-info"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <div class="stats-number text-warning" id="warningCount">0</div>
+                <h6 class="text-muted">WARNING</h6>
+                <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <div class="stats-number text-danger" id="errorCount">0</div>
+                <h6 class="text-muted">ERROR</h6>
+                <i class="fas fa-times-circle fa-2x text-danger"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <div class="stats-number text-secondary" id="debugCount">0</div>
+                <h6 class="text-muted">DEBUG</h6>
+                <i class="fas fa-bug fa-2x text-secondary"></i>
             </div>
         </div>
     </div>
@@ -36,15 +186,121 @@
 
 {% block scripts %}
 <script>
-// Auto-scroll to bottom of logs
-const logContainer = document.querySelector('.log-container');
-if (logContainer) {
-    logContainer.scrollTop = logContainer.scrollHeight;
+let autoRefreshInterval = null;
+
+// Filter logs by level
+function filterLogs() {
+    const showInfo = document.getElementById('showInfo').checked;
+    const showWarning = document.getElementById('showWarning').checked;
+    const showError = document.getElementById('showError').checked;
+    const showDebug = document.getElementById('showDebug').checked;
+    
+    const logs = document.querySelectorAll('.log-line');
+    let visibleCount = 0;
+    
+    logs.forEach(log => {
+        const level = log.getAttribute('data-level');
+        let shouldShow = false;
+        
+        if (level === 'info' && showInfo) shouldShow = true;
+        if (level === 'warning' && showWarning) shouldShow = true;
+        if (level === 'error' && showError) shouldShow = true;
+        if (level === 'debug' && showDebug) shouldShow = true;
+        
+        log.style.display = shouldShow ? 'block' : 'none';
+        if (shouldShow) visibleCount++;
+    });
+    
+    document.getElementById('logCount').textContent = `${visibleCount} записей`;
 }
 
-// Auto-refresh logs every 10 seconds
-setInterval(function() {
+// Search in logs
+function searchLogs() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const logs = document.querySelectorAll('.log-line');
+    let visibleCount = 0;
+    
+    logs.forEach(log => {
+        const text = log.textContent.toLowerCase();
+        const matches = text.includes(searchTerm);
+        
+        if (searchTerm === '' || matches) {
+            log.style.display = 'block';
+            visibleCount++;
+        } else {
+            log.style.display = 'none';
+        }
+    });
+    
+    if (searchTerm !== '') {
+        document.getElementById('logCount').textContent = `${visibleCount} найдено`;
+    } else {
+        filterLogs(); // Restore filter view
+    }
+}
+
+// Clear search
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    searchLogs();
+}
+
+// Refresh logs
+function refreshLogs() {
     location.reload();
-}, 10000);
+}
+
+// Toggle auto-refresh
+function toggleAutoRefresh() {
+    const icon = document.getElementById('autoRefreshIcon');
+    const text = document.getElementById('autoRefreshText');
+    
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        icon.className = 'fas fa-play';
+        text.textContent = 'Авто-обновление';
+    } else {
+        autoRefreshInterval = setInterval(refreshLogs, 30000); // Refresh every 30 seconds
+        icon.className = 'fas fa-pause';
+        text.textContent = 'Остановить';
+    }
+}
+
+// Count log levels
+function countLogLevels() {
+    const logs = document.querySelectorAll('.log-line');
+    let infoCount = 0, warningCount = 0, errorCount = 0, debugCount = 0;
+    
+    logs.forEach(log => {
+        const level = log.getAttribute('data-level');
+        switch (level) {
+            case 'info': infoCount++; break;
+            case 'warning': warningCount++; break;
+            case 'error': errorCount++; break;
+            case 'debug': debugCount++; break;
+        }
+    });
+    
+    document.getElementById('infoCount').textContent = infoCount;
+    document.getElementById('warningCount').textContent = warningCount;
+    document.getElementById('errorCount').textContent = errorCount;
+    document.getElementById('debugCount').textContent = debugCount;
+}
+
+// Auto-scroll to bottom
+function scrollToBottom() {
+    const container = document.getElementById('logsContainer');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    countLogLevels();
+    scrollToBottom();
+    filterLogs();
+});
 </script>
 {% endblock %}

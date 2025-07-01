@@ -128,6 +128,15 @@ Changelog:
   - Added DISCORD_TOKEN secret for secure authentication
   - Verified bot connects and syncs 18 commands successfully
   - Bot running in production mode with server whitelist restrictions
+- July 01, 2025. Fixed persistent button functionality and enhanced web interface
+  - FIXED: Persistent view buttons now work correctly after bot restarts
+  - Added persistent view registration in bot.py setup_hook
+  - Created comprehensive dark-themed web interface with raspberry accent color
+  - Added detailed giveaway view page with participants, winners, and prizes
+  - Enhanced dashboard with statistics, charts, and real-time data
+  - Improved prizes page with toggle views and usage statistics
+  - Advanced logs page with filtering, search, and auto-refresh
+  - Implemented Majestic Party San Francisco branding throughout interface
 ```
 
 ## User Preferences

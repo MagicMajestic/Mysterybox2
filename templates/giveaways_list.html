@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Все розыгрыши - Majestic Party San Francisco{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-list text-primary"></i> 
+                Все розыгрыши
+            </h1>
+            <a href="/" class="btn btn-outline-primary">
+                <i class="fas fa-tachometer-alt"></i> Панель управления
+            </a>
+        </div>
+    </div>
+</div>
+
+{% if giveaways %}
+<div class="row">
+    {% for giveaway_id, giveaway in giveaways %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">{{ giveaway.title }}</h6>
+                {% if giveaway.ended %}
+                    <span class="badge bg-danger">Завершен</span>
+                {% else %}
+                    <span class="badge bg-success">Активен</span>
+                {% endif %}
+            </div>
+            <div class="card-body d-flex flex-column">
+                <p class="text-muted mb-3">{{ giveaway.description[:100] }}{% if giveaway.description|length > 100 %}...{% endif %}</p>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h5 text-primary mb-1">{{ giveaway.participants|length }}</div>
+                            <small class="text-muted">Участников</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h5 text-warning mb-1">{{ giveaway.num_winners|default(1) }}</div>
+                            <small class="text-muted">Победителей</small>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if giveaway.ended and giveaway.winners %}
+                <div class="mb-3">
+                    <h6><i class="fas fa-crown text-warning"></i> Победители:</h6>
+                    {% for winner in giveaway.winners[:3] %}
+                        <small class="badge bg-warning me-1">{{ winner }}</small>
+                    {% endfor %}
+                    {% if giveaway.winners|length > 3 %}
+                        <small class="text-muted">+{{ giveaway.winners|length - 3 }}</small>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> 
+                        {{ giveaway.end_time|timestamp_to_date }}
+                    </small>
+                </div>
+                
+                <div class="mt-auto">
+                    <a href="/giveaway/{{ giveaway_id }}" class="btn btn-primary w-100">
+                        <i class="fas fa-eye"></i> Подробнее
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination placeholder for future enhancement -->
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <p class="text-muted">Показано {{ giveaways|length }} розыгрышей</p>
+    </div>
+</div>
+
+{% else %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-gift fa-5x text-muted mb-4"></i>
+                <h3 class="text-muted">Розыгрыши не найдены</h3>
+                <p class="text-muted">Розыгрыши будут отображаться здесь после их создания через Discord бот</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

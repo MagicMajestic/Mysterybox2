@@ -1,45 +1,258 @@
 {% extends "base.html" %}
 
-{% block title %}Призы - MysteryBox Bot{% endblock %}
+{% block title %}Призы - Majestic Party San Francisco{% endblock %}
 
 {% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-trophy text-primary"></i> 
+                Управление призами
+            </h1>
+            <a href="/" class="btn btn-outline-primary">
+                <i class="fas fa-tachometer-alt"></i> Панель управления
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <div class="stats-number">{{ prizes|length }}</div>
+                <h6 class="text-muted">Всего призов</h6>
+                <i class="fas fa-gift fa-2x text-primary"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <div class="stats-number">{{ prizes|selectattr('used', 'defined')|selectattr('used')|list|length }}</div>
+                <h6 class="text-muted">Использованных</h6>
+                <i class="fas fa-check-circle fa-2x text-success"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <div class="stats-number">{{ (prizes|length) - (prizes|selectattr('used', 'defined')|selectattr('used')|list|length) }}</div>
+                <h6 class="text-muted">Доступных</h6>
+                <i class="fas fa-box fa-2x text-info"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <div class="stats-number">{{ prizes|map(attribute='name')|map('length')|sum // prizes|length if prizes else 0 }}</div>
+                <h6 class="text-muted">Ср. длина названия</h6>
+                <i class="fas fa-text-width fa-2x text-warning"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Prizes List -->
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-trophy"></i> Список призов</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> Список призов
+                </h5>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm me-2" onclick="toggleView()">
+                        <i class="fas fa-th" id="viewIcon"></i> <span id="viewText">Карточки</span>
+                    </button>
+                    <span class="badge bg-info">{{ prizes|length }} призов</span>
+                </div>
             </div>
             <div class="card-body">
                 {% if prizes %}
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Название приза</th>
-                                    <th>Дата добавления</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for prize_id, prize_name in prizes.items() %}
-                                <tr>
-                                    <td><code>{{ prize_id }}</code></td>
-                                    <td>{{ prize_name }}</td>
-                                    <td>-</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                
+                <!-- Table View -->
+                <div id="tableView" class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Название</th>
+                                <th>Описание</th>
+                                <th>Статус</th>
+                                <th>Создан</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for prize_id, prize in prizes.items() %}
+                            <tr>
+                                <td><code>{{ prize_id }}</code></td>
+                                <td>
+                                    <strong>{{ prize.name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="text-muted">
+                                        {{ prize.description[:50] if prize.description else 'Без описания' }}
+                                        {% if prize.description and prize.description|length > 50 %}...{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if prize.used %}
+                                        <span class="badge bg-danger">Использован</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Доступен</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ prize.created_at|timestamp_to_date if prize.created_at else 'Неизвестно' }}
+                                    </small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Card View -->
+                <div id="cardView" class="row" style="display: none;">
+                    {% for prize_id, prize in prizes.items() %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card stats-card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">{{ prize.name }}</h6>
+                                {% if prize.used %}
+                                    <span class="badge bg-danger">Использован</span>
+                                {% else %}
+                                    <span class="badge bg-success">Доступен</span>
+                                {% endif %}
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                {% if prize.description %}
+                                <p class="text-muted mb-3">{{ prize.description }}</p>
+                                {% else %}
+                                <p class="text-muted mb-3 fst-italic">Описание отсутствует</p>
+                                {% endif %}
+                                
+                                <div class="mt-auto">
+                                    <small class="text-muted">
+                                        <i class="fas fa-tag"></i> ID: <code>{{ prize_id }}</code>
+                                    </small>
+                                    {% if prize.created_at %}
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> {{ prize.created_at|timestamp_to_date }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                    {% endfor %}
+                </div>
+
                 {% else %}
-                    <div class="text-center py-4">
-                        <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
-                        <h5>Призы не найдены</h5>
-                        <p class="text-muted">Добавьте призы через Discord бота командой <code>/add_prize</code></p>
-                    </div>
+                <div class="text-center py-5">
+                    <i class="fas fa-trophy fa-5x text-muted mb-4"></i>
+                    <h3 class="text-muted">Призы не найдены</h3>
+                    <p class="text-muted">Призы добавляются через Discord бот командой <code>/mysterybox_add_prize</code></p>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+
+<!-- Additional Info -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> Информация
+                </h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Управление призами:</strong></p>
+                <ul class="text-muted">
+                    <li>Добавить приз: <code>/mysterybox_add_prize</code></li>
+                    <li>Удалить приз: <code>/mysterybox_remove_prize</code></li>
+                    <li>Список призов: <code>/mysterybox_list_prizes</code></li>
+                    <li>Назначить призы: <code>/mysterybox_assign_prizes</code></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie"></i> Статистика использования
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="prizeChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Toggle between table and card view
+function toggleView() {
+    const tableView = document.getElementById('tableView');
+    const cardView = document.getElementById('cardView');
+    const viewIcon = document.getElementById('viewIcon');
+    const viewText = document.getElementById('viewText');
+    
+    if (tableView.style.display === 'none') {
+        tableView.style.display = 'block';
+        cardView.style.display = 'none';
+        viewIcon.className = 'fas fa-th';
+        viewText.textContent = 'Карточки';
+    } else {
+        tableView.style.display = 'none';
+        cardView.style.display = 'block';
+        viewIcon.className = 'fas fa-table';
+        viewText.textContent = 'Таблица';
+    }
+}
+
+// Prize usage chart
+const usedPrizes = {{ prizes|selectattr('used', 'defined')|selectattr('used')|list|length }};
+const availablePrizes = {{ (prizes|length) - (prizes|selectattr('used', 'defined')|selectattr('used')|list|length) }};
+
+const prizeCtx = document.getElementById('prizeChart').getContext('2d');
+const prizeChart = new Chart(prizeCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Доступные', 'Использованные'],
+        datasets: [{
+            data: [availablePrizes, usedPrizes],
+            backgroundColor: [
+                '#28a745',
+                '#dc3545'
+            ],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#ffffff'
+                }
+            }
+        }
+    }
+});
+</script>
 {% endblock %}

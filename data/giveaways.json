@@ -1493,7 +1493,8 @@
         "participants": [
             "318071839329091584"
         ],
-        "ended": false,
-        "num_winners": 1
+        "ended": true,
+        "num_winners": 1,
+        "celebration_gif": "0"
     }
 }
