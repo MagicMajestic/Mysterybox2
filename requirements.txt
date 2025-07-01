@@ -21,3 +21,8 @@ flask-sqlalchemy
 gunicorn
 psycopg2-binary
 flask
+aiohttp>=3.8.6
+discord.py>=2.5.2
+flask>=2.3.0
+gunicorn>=21.0.0
+python-dotenv>=1.1.0
