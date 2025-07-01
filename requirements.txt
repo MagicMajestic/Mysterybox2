@@ -15,3 +15,8 @@ gunicorn
 discord.py
 flask
 gunicorn
+email_validator
+flask
+flask-sqlalchemy
+gunicorn
+psycopg2-binary
