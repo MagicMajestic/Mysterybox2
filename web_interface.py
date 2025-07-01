@@ -188,6 +188,12 @@ def calculate_statistics():
         total_participants = len(all_participants)
         unique_participants = len(set(all_participants))
         
+        # Calculate total winners from completed giveaways
+        total_winners = 0
+        for giveaway in giveaways.values():
+            if giveaway.get('ended', False) and giveaway.get('winner_id'):
+                total_winners += 1
+        
         # Default activity for last 7 days (participants)
         activity_stats = calculate_activity_stats('day')
         
@@ -197,7 +203,7 @@ def calculate_statistics():
             'completed_giveaways': completed_giveaways,
             'total_participants': total_participants,
             'unique_participants': unique_participants,
-            'total_prizes': len(prizes),
+            'total_winners': total_winners,
             'activity_data': activity_stats['activity_data'],
             'activity_labels': activity_stats['activity_labels'],
             'period_name': activity_stats['period_name']
@@ -210,7 +216,7 @@ def calculate_statistics():
             'completed_giveaways': 0,
             'total_participants': 0,
             'unique_participants': 0,
-            'total_prizes': 0,
+            'total_winners': 0,
             'activity_data': [0] * 7,
             'activity_labels': [''] * 7,
             'period_name': 'дням'

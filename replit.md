@@ -144,6 +144,12 @@ Changelog:
   - Web interface runs on port 5000 with gunicorn server
   - Both Discord bot and web dashboard operational
   - Production mode active with server whitelist restrictions
+- July 01, 2025. Enhanced dashboard with giveaway event logging and statistics improvements
+  - Added comprehensive giveaway event logging system tracking all activities
+  - Created recent events section on dashboard showing last 10 giveaway events
+  - Replaced "Призов" (Prizes) statistic with "Победителей" (Winners) count
+  - Enhanced activity statistics to track participant counts instead of giveaway counts
+  - Improved event tracking with detailed logging of creation, participation, completion, and admin actions
 ```
 
 ## User Preferences
