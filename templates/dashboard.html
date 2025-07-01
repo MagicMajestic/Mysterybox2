@@ -192,6 +192,50 @@
         </div>
     </div>
 </div>
+
+<!-- Recent Events/Logs -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i> Последние события розыгрышей
+                </h5>
+                <a href="/logs" class="btn btn-outline-primary btn-sm">
+                    Все логи
+                </a>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% if recent_events %}
+                    {% for event in recent_events %}
+                    <div class="d-flex align-items-center mb-2 p-2 rounded" style="background: var(--secondary-bg);">
+                        <div class="me-3">
+                            <i class="{{ event.icon }}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold small">{{ event.message }}</div>
+                            <small class="text-muted">{{ event.timestamp|timestamp_to_date }}</small>
+                        </div>
+                        {% if event.giveaway_id %}
+                        <div>
+                            <a href="/giveaway/{{ event.giveaway_id }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-history fa-3x text-muted"></i>
+                    <h5 class="mt-3 text-muted">Нет событий</h5>
+                    <p class="text-muted">События розыгрышей будут отображаться здесь после их создания и изменений</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}

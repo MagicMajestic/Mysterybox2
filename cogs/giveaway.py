@@ -29,6 +29,7 @@ from utils.database import (
     PRIZE_LISTS_DIR,
     PRIZE_LISTS_FILE
 )
+from utils.giveaway_logger import log_giveaway_event
 
 logger = logging.getLogger(__name__)
 
@@ -380,6 +381,35 @@ class GiveawayCog(commands.Cog):
                         original_embed.color = discord.Color.dark_grey()
 
                         await message.edit(embed=original_embed, view=None)
+                
+                # Log giveaway ended and winner selection events
+                log_giveaway_event(
+                    event_type='ended',
+                    giveaway_id=giveaway_id,
+                    details={
+                        'participant_count': len(participants),
+                        'winner_count': len(winners)
+                    }
+                )
+                
+                # Log each winner selection
+                for i, (winner_id, prize) in enumerate(zip(winners, prize_list)):
+                    try:
+                        winner_user = await self.bot.fetch_user(int(winner_id))
+                        winner_name = winner_user.display_name
+                    except:
+                        winner_name = f"User {winner_id}"
+                    
+                    log_giveaway_event(
+                        event_type='winner_selected',
+                        giveaway_id=giveaway_id,
+                        user_id=winner_id,
+                        user_name=winner_name,
+                        details={
+                            'prize_name': prize,
+                            'winner_position': i + 1
+                        }
+                    )
             else:
                 # No participants
                 embed = discord.Embed(
@@ -479,6 +509,20 @@ class GiveawayCog(commands.Cog):
         )
 
         logger.info(f"Created giveaway {giveaway_id} ending in {seconds_until_end} seconds")
+        
+        # Log giveaway creation event
+        log_giveaway_event(
+            event_type='created',
+            giveaway_id=giveaway_id,
+            user_id=str(interaction.user.id),
+            user_name=interaction.user.display_name,
+            details={
+                'title': title,
+                'duration_hours': hours,
+                'duration_minutes': minutes,
+                'num_winners': num_winners
+            }
+        )
 
     async def add_participant(self, interaction: discord.Interaction, giveaway_id: str):
         """Add a participant to a giveaway"""
@@ -527,6 +571,17 @@ class GiveawayCog(commands.Cog):
 
         await interaction.response.send_message("Вы успешно присоединились к розыгрышу! Ожидайте результатов.", ephemeral=True)
         logger.info(f"User {user_id} joined giveaway {giveaway_id}")
+        
+        # Log participant joined event
+        log_giveaway_event(
+            event_type='participant_joined',
+            giveaway_id=giveaway_id,
+            user_id=user_id,
+            user_name=interaction.user.display_name,
+            details={
+                'participant_count': len(participants)
+            }
+        )
 
     @app_commands.command(name="participants", description="Посмотреть список участников розыгрыша")
     @app_commands.describe(giveaway_id="ID розыгрыша (можно найти в нижней части сообщения с розыгрышем)")

@@ -16,6 +16,11 @@ from utils.database import (
     save_giveaways,
     save_prizes
 )
+from utils.giveaway_logger import (
+    get_recent_events,
+    format_event_message,
+    get_event_icon
+)
 from collections import defaultdict, Counter
 
 app = Flask(__name__)
@@ -224,11 +229,23 @@ def dashboard():
     # Sort by end_time, most recent first
     giveaways_list.sort(key=lambda x: x[1].get('end_time', 0), reverse=True)
     
+    # Get recent giveaway events for logs section
+    recent_events = get_recent_events(limit=10)
+    formatted_events = []
+    for event in recent_events:
+        formatted_events.append({
+            'timestamp': event.get('timestamp'),
+            'message': format_event_message(event),
+            'icon': get_event_icon(event.get('event_type', 'unknown')),
+            'giveaway_id': event.get('giveaway_id')
+        })
+    
     return render_template('dashboard.html', 
                          stats=stats,
                          giveaways=giveaways_list,
                          bot_status=bot_online,
-                         current_time=datetime.now().strftime('%d.%m.%Y %H:%M:%S'))
+                         current_time=datetime.now().strftime('%d.%m.%Y %H:%M:%S'),
+                         recent_events=formatted_events)
 
 @app.route('/api/giveaways')
 def api_giveaways():
