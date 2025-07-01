@@ -47,6 +47,124 @@ def get_bot_status():
     except Exception as e:
         return False, f'Не удалось проверить статус: {str(e)}'
 
+def calculate_activity_stats(period='day'):
+    """Calculate activity statistics with flexible period filtering"""
+    try:
+        giveaways = load_giveaways()
+        now = datetime.now()
+        
+        # Define periods
+        if period == 'day':
+            days_back = 7
+            date_format = '%d.%m'
+            period_name = 'дням'
+        elif period == 'week':
+            days_back = 7 * 4  # 4 weeks
+            date_format = '%d.%m'
+            period_name = 'неделям'
+        elif period == 'month':
+            days_back = 30 * 12  # 12 months
+            date_format = '%m.%y'
+            period_name = 'месяцам'
+        elif period == 'year':
+            days_back = 365 * 5  # 5 years
+            date_format = '%Y'
+            period_name = 'годам'
+        else:
+            days_back = 7
+            date_format = '%d.%m'
+            period_name = 'дням'
+        
+        activity_data = []
+        activity_labels = []
+        
+        if period == 'day':
+            # Last 7 days
+            for i in range(6, -1, -1):
+                day = now - timedelta(days=i)
+                day_start = day.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+                day_end = day.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp()
+                
+                day_participants = 0
+                for giveaway in giveaways.values():
+                    giveaway_time = giveaway.get('end_time', 0)
+                    if day_start <= giveaway_time <= day_end:
+                        day_participants += len(giveaway.get('participants', []))
+                
+                activity_data.append(day_participants)
+                activity_labels.append(day.strftime(date_format))
+                
+        elif period == 'week':
+            # Last 4 weeks
+            for i in range(3, -1, -1):
+                week_start = now - timedelta(weeks=i+1)
+                week_end = now - timedelta(weeks=i)
+                week_start_ts = week_start.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+                week_end_ts = week_end.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp()
+                
+                week_participants = 0
+                for giveaway in giveaways.values():
+                    giveaway_time = giveaway.get('end_time', 0)
+                    if week_start_ts <= giveaway_time <= week_end_ts:
+                        week_participants += len(giveaway.get('participants', []))
+                
+                activity_data.append(week_participants)
+                activity_labels.append(f"Неделя {week_start.strftime('%d.%m')}")
+                
+        elif period == 'month':
+            # Last 12 months
+            for i in range(11, -1, -1):
+                if i == 0:
+                    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    month_end = now
+                else:
+                    month_date = now - timedelta(days=30*i)
+                    month_start = month_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                    next_month = month_start.replace(month=month_start.month+1) if month_start.month < 12 else month_start.replace(year=month_start.year+1, month=1)
+                    month_end = next_month - timedelta(days=1)
+                
+                month_start_ts = month_start.timestamp()
+                month_end_ts = month_end.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp()
+                
+                month_participants = 0
+                for giveaway in giveaways.values():
+                    giveaway_time = giveaway.get('end_time', 0)
+                    if month_start_ts <= giveaway_time <= month_end_ts:
+                        month_participants += len(giveaway.get('participants', []))
+                
+                activity_data.append(month_participants)
+                activity_labels.append(month_start.strftime(date_format))
+                
+        elif period == 'year':
+            # Last 5 years
+            for i in range(4, -1, -1):
+                year = now.year - i
+                year_start = datetime(year, 1, 1).timestamp()
+                year_end = datetime(year, 12, 31, 23, 59, 59, 999999).timestamp()
+                
+                year_participants = 0
+                for giveaway in giveaways.values():
+                    giveaway_time = giveaway.get('end_time', 0)
+                    if year_start <= giveaway_time <= year_end:
+                        year_participants += len(giveaway.get('participants', []))
+                
+                activity_data.append(year_participants)
+                activity_labels.append(str(year))
+        
+        return {
+            'activity_data': activity_data,
+            'activity_labels': activity_labels,
+            'period_name': period_name
+        }
+        
+    except Exception as e:
+        print(f"Error calculating activity statistics: {e}")
+        return {
+            'activity_data': [0] * 7,
+            'activity_labels': [''] * 7,
+            'period_name': 'дням'
+        }
+
 def calculate_statistics():
     """Calculate comprehensive statistics for the dashboard"""
     try:
@@ -65,24 +183,8 @@ def calculate_statistics():
         total_participants = len(all_participants)
         unique_participants = len(set(all_participants))
         
-        # Activity data for last 7 days
-        now = datetime.now()
-        activity_data = []
-        activity_labels = []
-        
-        for i in range(6, -1, -1):
-            day = now - timedelta(days=i)
-            day_start = day.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
-            day_end = day.replace(hour=23, minute=59, second=59, microsecond=999999).timestamp()
-            
-            day_giveaways = 0
-            for giveaway in giveaways.values():
-                giveaway_time = giveaway.get('end_time', 0)
-                if day_start <= giveaway_time <= day_end:
-                    day_giveaways += 1
-            
-            activity_data.append(day_giveaways)
-            activity_labels.append(day.strftime('%d.%m'))
+        # Default activity for last 7 days (participants)
+        activity_stats = calculate_activity_stats('day')
         
         return {
             'total_giveaways': total_giveaways,
@@ -91,8 +193,9 @@ def calculate_statistics():
             'total_participants': total_participants,
             'unique_participants': unique_participants,
             'total_prizes': len(prizes),
-            'activity_data': activity_data,
-            'activity_labels': activity_labels
+            'activity_data': activity_stats['activity_data'],
+            'activity_labels': activity_stats['activity_labels'],
+            'period_name': activity_stats['period_name']
         }
     except Exception as e:
         print(f"Error calculating statistics: {e}")
@@ -104,7 +207,8 @@ def calculate_statistics():
             'unique_participants': 0,
             'total_prizes': 0,
             'activity_data': [0] * 7,
-            'activity_labels': [''] * 7
+            'activity_labels': [''] * 7,
+            'period_name': 'дням'
         }
 
 @app.route('/')
@@ -160,6 +264,15 @@ def api_stats():
         'bot_status': bot_status,
         'timestamp': datetime.now().isoformat()
     })
+
+@app.route('/api/activity/<period>')
+def api_activity(period):
+    """API endpoint for activity statistics by period"""
+    if period not in ['day', 'week', 'month', 'year']:
+        period = 'day'
+    
+    activity_stats = calculate_activity_stats(period)
+    return jsonify(activity_stats)
 
 @app.route('/giveaway/<giveaway_id>')
 def giveaway_detail(giveaway_id):
