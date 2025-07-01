@@ -14,28 +14,28 @@ def setup_logging():
     """Setup logging to both console and file"""
     # Ensure logs directory exists
     os.makedirs('logs', exist_ok=True)
-    
+
     # Create console handler with INFO level
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     console_handler.setFormatter(console_format)
-    
+
     # Create file handler with DEBUG level
     log_file = 'logs/bot.log'
     file_handler = logging.FileHandler(log_file)
     file_handler.setLevel(logging.DEBUG)
     file_format = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(file_format)
-    
+
     # Get root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)
-    
+
     # Add handlers
     root_logger.addHandler(console_handler)
     root_logger.addHandler(file_handler)
-    
+
     return root_logger
 
 logger = setup_logging()
@@ -57,23 +57,23 @@ async def run_bot_with_retry(token):
     retry_count = 0
     retry_interval = INITIAL_RETRY_INTERVAL
     total_retry_attempt = 0
-    
+
     # Track rate limit buckets
     rate_limit_reset = 0
-    
+
     while retry_count < MAX_RETRIES:
         try:
             # Log attempt information
             logger.info(f"Starting bot (attempt {retry_count + 1}/{MAX_RETRIES}, total attempts: {total_retry_attempt + 1})")
             total_retry_attempt += 1
-            
+
             # Initialize the bot with a new instance each time
             bot = MysteryBoxBot()
-            
+
             # Use run_until_complete for better control
             logger.info("Bot connecting to Discord...")
             await bot.start(token)
-            
+
             # If we get here, the bot exited normally
             logger.info("Bot disconnected normally")
             return
@@ -81,11 +81,11 @@ async def run_bot_with_retry(token):
             if e.status == 429:  # Rate limited
                 retry_after = e.retry_after if hasattr(e, 'retry_after') else retry_interval
                 current_time = time.time()
-                
+
                 if current_time < rate_limit_reset:
                     # We're still in cooldown, wait longer
                     retry_after = max(retry_after, rate_limit_reset - current_time)
-                
+
                 rate_limit_reset = current_time + retry_after
                 logger.warning(f"Rate limited by Discord API. Waiting {retry_after:.1f} seconds...")
                 await asyncio.sleep(retry_after)
@@ -119,7 +119,7 @@ async def run_bot_with_retry(token):
             logger.error(f"Unexpected error: {type(e).__name__}: {e}")
             import traceback
             logger.error(traceback.format_exc())
-        
+
         # Increment retry count and wait before next attempt
         retry_count += 1
         if retry_count < MAX_RETRIES:
@@ -136,12 +136,12 @@ def main():
     if not token:
         logger.error("No Discord token found. Please set the DISCORD_TOKEN environment variable.")
         return
-    
+
     # Only sync commands on demand through the SYNC_COMMANDS environment variable
     sync_commands = os.getenv("SYNC_COMMANDS", "false").lower()
     if sync_commands == "true":
         logger.info("Command sync is enabled for this session")
-    
+
     # Run bot with retry mechanism
     try:
         asyncio.run(run_bot_with_retry(token))
