@@ -44,6 +44,12 @@ class MysteryBoxBot(commands.Bot):
         # Initialize session storage
         self._sessions = set()
 
+        # Add persistent view for giveaway buttons BEFORE syncing commands
+        from cogs.giveaway import GiveawayButton
+        persistent_view = GiveawayButton(timeout=None)
+        self.add_view(persistent_view)
+        logger.info("Added persistent giveaway button view")
+
         # Force command sync on startup
         os.environ["SYNC_COMMANDS"] = "true"
 

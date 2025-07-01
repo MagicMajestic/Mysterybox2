@@ -38,7 +38,7 @@ class GiveawayButton(discord.ui.View):
         self.giveaway_id = giveaway_id
 
     @discord.ui.button(label="Участвовать", style=discord.ButtonStyle.primary, emoji="🎁", custom_id="giveaway_participate")
-    async def participate_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def participate_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         logger.info(f"Button interaction received from user {interaction.user.id}")
         
         # Extract giveaway_id from the message embed footer if not provided
@@ -102,10 +102,7 @@ class GiveawayCog(commands.Cog):
             self.bot_ready = True
             logger.info("Bot ready - restoring active giveaways and UI Views")
 
-            # Register persistent view for giveaway buttons
-            self.bot.add_view(GiveawayButton(timeout=None))
-            logger.info("Registered persistent giveaway button view")
-
+            # Reload active giveaways and restore their UI Views
             self.reload_active_giveaways()
 
     async def is_allowed_guild(self, interaction: discord.Interaction) -> bool:
@@ -269,8 +266,8 @@ class GiveawayCog(commands.Cog):
                 logger.warning(f"No permission to access message {message_id} for giveaway {giveaway_id}")
                 return
 
-            # Create a new view with the participation button
-            view = GiveawayButton(giveaway_id)
+            # Create a new view with the participation button and pass giveaway_id
+            view = GiveawayButton(giveaway_id=giveaway_id, timeout=None)
 
             # Update the message with the restored view
             await message.edit(view=view)
