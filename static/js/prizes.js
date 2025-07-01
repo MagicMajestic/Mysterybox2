@@ -1,10 +1,39 @@
 // Prize Management JavaScript
 
-// Initialize when page loads
+// Wait for DOM and Bootstrap to be ready
 document.addEventListener('DOMContentLoaded', function() {
-    initializePrizeChart();
-    initializeFileUpload();
+    // Wait for Bootstrap to be available
+    if (typeof bootstrap === 'undefined') {
+        setTimeout(function() {
+            initializePrizeChart();
+            initializeFileUpload();
+        }, 100);
+    } else {
+        initializePrizeChart();
+        initializeFileUpload();
+    }
 });
+
+// Helper function to safely get modal
+function safeGetModal(modalId) {
+    const modalElement = document.getElementById(modalId);
+    if (!modalElement) {
+        console.error(`Модальное окно с ID "${modalId}" не найдено`);
+        return null;
+    }
+    
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap не загружен');
+        return null;
+    }
+    
+    try {
+        return new bootstrap.Modal(modalElement);
+    } catch (error) {
+        console.error('Ошибка создания модального окна:', error);
+        return null;
+    }
+}
 
 // Toggle between table and card view
 function toggleView() {
@@ -65,8 +94,12 @@ function initializePrizeChart() {
 
 // Prize Management Functions
 function showAddPrizeModal() {
-    const modal = new bootstrap.Modal(document.getElementById('addPrizeModal'));
-    modal.show();
+    const modal = safeGetModal('addPrizeModal');
+    if (modal) {
+        modal.show();
+    } else {
+        alert('Ошибка: не удалось открыть форму добавления приза');
+    }
 }
 
 function addPrize() {
@@ -128,8 +161,12 @@ function removePrize(prizeId) {
 
 // Prize List Management Functions
 function showCreatePrizeListModal() {
-    const modal = new bootstrap.Modal(document.getElementById('createPrizeListModal'));
-    modal.show();
+    const modal = safeGetModal('createPrizeListModal');
+    if (modal) {
+        modal.show();
+    } else {
+        alert('Ошибка: не удалось открыть форму создания списка');
+    }
 }
 
 function createPrizeList() {
@@ -178,20 +215,25 @@ function viewPrizeList(listId) {
         if (content) {
             content.innerHTML = `
                 <div class="mb-3">
-                    <h6>Название: <strong>${data.metadata.name}</strong></h6>
-                    <p class="text-muted">Количество призов: ${data.metadata.prize_count}</p>
+                    <h6>Название: <strong>${data.metadata.name || 'Без названия'}</strong></h6>
+                    <p class="text-muted">Количество призов: ${data.metadata.prize_count || 0}</p>
                 </div>
-                <div class="border rounded p-3" style="background: var(--secondary-bg); max-height: 400px; overflow-y: auto;">
-                    <pre class="mb-0">${data.content}</pre>
+                <div class="border rounded p-3" style="background: #2d3748; max-height: 400px; overflow-y: auto;">
+                    <pre class="mb-0" style="color: #e2e8f0;">${data.content || 'Список пуст'}</pre>
                 </div>
             `;
         }
         
-        const modal = new bootstrap.Modal(document.getElementById('viewPrizeListModal'));
-        modal.show();
+        const modal = safeGetModal('viewPrizeListModal');
+        if (modal) {
+            modal.show();
+        } else {
+            alert('Ошибка: не удалось открыть окно просмотра');
+        }
     })
     .catch(error => {
-        alert('Ошибка при загрузке списка призов: ' + error);
+        console.error('Ошибка при загрузке списка призов:', error);
+        alert('Ошибка при загрузке списка призов: ' + error.message);
     });
 }
 
@@ -210,15 +252,24 @@ function editPrizeList(listId) {
         
         if (editListId && editListName && editPrizeContent) {
             editListId.value = listId;
-            editListName.value = data.metadata.name;
-            editPrizeContent.value = data.content;
+            editListName.value = data.metadata.name || '';
+            editPrizeContent.value = data.content || '';
+        } else {
+            console.error('Не найдены элементы формы редактирования');
+            alert('Ошибка: элементы формы не найдены');
+            return;
         }
         
-        const modal = new bootstrap.Modal(document.getElementById('editPrizeListModal'));
-        modal.show();
+        const modal = safeGetModal('editPrizeListModal');
+        if (modal) {
+            modal.show();
+        } else {
+            alert('Ошибка: не удалось открыть форму редактирования');
+        }
     })
     .catch(error => {
-        alert('Ошибка при загрузке списка призов: ' + error);
+        console.error('Ошибка при загрузке списка призов:', error);
+        alert('Ошибка при загрузке списка призов: ' + error.message);
     });
 }
 
