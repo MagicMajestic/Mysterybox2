@@ -150,6 +150,13 @@ Changelog:
   - Replaced "Призов" (Prizes) statistic with "Победителей" (Winners) count
   - Enhanced activity statistics to track participant counts instead of giveaway counts
   - Improved event tracking with detailed logging of creation, participation, completion, and admin actions
+- July 01, 2025. Added comprehensive prize and prize list management to web interface
+  - Created full web interface for prize management (add, remove, view prizes)
+  - Added prize list management system (create, edit, view, delete prize lists)
+  - Implemented API endpoints for all prize operations (/api/prizes/*, /api/prize-lists/*)
+  - Added modal dialogs for user-friendly prize and list management
+  - Enhanced prizes page with management controls and prize list display
+  - All Discord bot prize functionality now available through web interface
 ```
 
 ## User Preferences

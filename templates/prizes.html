@@ -66,6 +66,9 @@
                     <i class="fas fa-list"></i> Список призов
                 </h5>
                 <div>
+                    <button class="btn btn-success btn-sm me-2" onclick="showAddPrizeModal()">
+                        <i class="fas fa-plus"></i> Добавить приз
+                    </button>
                     <button class="btn btn-outline-primary btn-sm me-2" onclick="toggleView()">
                         <i class="fas fa-th" id="viewIcon"></i> <span id="viewText">Карточки</span>
                     </button>
@@ -85,6 +88,7 @@
                                 <th>Описание</th>
                                 <th>Статус</th>
                                 <th>Создан</th>
+                                <th>Действия</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -111,6 +115,11 @@
                                     <small class="text-muted">
                                         {{ prize.created_at|timestamp_to_date if prize.created_at else 'Неизвестно' }}
                                     </small>
+                                </td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" onclick="removePrize('{{ prize_id }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -167,6 +176,72 @@
     </div>
 </div>
 
+<!-- Prize Lists Management -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list-ul"></i> Списки призов
+                </h5>
+                <button class="btn btn-success btn-sm" onclick="showCreatePrizeListModal()">
+                    <i class="fas fa-plus"></i> Создать список
+                </button>
+            </div>
+            <div class="card-body">
+                {% if prize_lists %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Название</th>
+                                <th>Количество призов</th>
+                                <th>Создан</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for list_id, list_data in prize_lists.items() %}
+                            <tr>
+                                <td><code>{{ list_id }}</code></td>
+                                <td><strong>{{ list_data.name }}</strong></td>
+                                <td>
+                                    <span class="badge bg-info">{{ list_data.prize_count }}</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ list_data.created_at|timestamp_to_date if list_data.created_at else 'Неизвестно' }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm me-1" onclick="viewPrizeList('{{ list_id }}')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-warning btn-sm me-1" onclick="editPrizeList('{{ list_id }}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="removePrizeList('{{ list_id }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-list-ul fa-3x text-muted"></i>
+                    <h5 class="mt-3 text-muted">Списки призов не найдены</h5>
+                    <p class="text-muted">Создайте первый список призов для удобного управления</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Additional Info -->
 <div class="row mt-4">
     <div class="col-md-6">
@@ -201,6 +276,133 @@
     </div>
 </div>
 {% endblock %}
+
+<!-- Modals -->
+<!-- Add Prize Modal -->
+<div class="modal fade" id="addPrizeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus"></i> Добавить приз
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addPrizeForm">
+                    <div class="mb-3">
+                        <label for="prizeId" class="form-label">ID приза</label>
+                        <input type="text" class="form-control" id="prizeId" required>
+                        <div class="form-text">Уникальный идентификатор приза</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="prizeName" class="form-label">Название приза</label>
+                        <input type="text" class="form-control" id="prizeName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="prizeDescription" class="form-label">Описание (необязательно)</label>
+                        <textarea class="form-control" id="prizeDescription" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-success" onclick="addPrize()">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Prize List Modal -->
+<div class="modal fade" id="createPrizeListModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus"></i> Создать список призов
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createPrizeListForm">
+                    <div class="mb-3">
+                        <label for="listId" class="form-label">ID списка</label>
+                        <input type="text" class="form-control" id="listId" required>
+                        <div class="form-text">Уникальный идентификатор списка призов</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="listName" class="form-label">Название списка</label>
+                        <input type="text" class="form-control" id="listName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="prizeContent" class="form-label">Содержимое списка</label>
+                        <textarea class="form-control" id="prizeContent" rows="10" 
+                                  placeholder="Введите каждый приз с новой строки..."></textarea>
+                        <div class="form-text">Каждый приз на отдельной строке</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-success" onclick="createPrizeList()">Создать</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Prize List Modal -->
+<div class="modal fade" id="viewPrizeListModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-eye"></i> Просмотр списка призов
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="prizeListContent">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Prize List Modal -->
+<div class="modal fade" id="editPrizeListModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> Редактировать список призов
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editPrizeListForm">
+                    <input type="hidden" id="editListId">
+                    <div class="mb-3">
+                        <label for="editListName" class="form-label">Название списка</label>
+                        <input type="text" class="form-control" id="editListName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPrizeContent" class="form-label">Содержимое списка</label>
+                        <textarea class="form-control" id="editPrizeContent" rows="10"></textarea>
+                        <div class="form-text">Каждый приз на отдельной строке</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-warning" onclick="updatePrizeList()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% block scripts %}
 <script>
@@ -254,5 +456,224 @@ const prizeChart = new Chart(prizeCtx, {
         }
     }
 });
+
+// Prize Management Functions
+function showAddPrizeModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addPrizeModal'));
+    modal.show();
+}
+
+function addPrize() {
+    const prizeId = document.getElementById('prizeId').value.trim();
+    const prizeName = document.getElementById('prizeName').value.trim();
+    const prizeDescription = document.getElementById('prizeDescription').value.trim();
+    
+    if (!prizeId || !prizeName) {
+        alert('ID приза и название обязательны');
+        return;
+    }
+    
+    fetch('/api/prizes/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            prize_id: prizeId,
+            prize_name: prizeName,
+            prize_description: prizeDescription
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка при добавлении приза: ' + error);
+    });
+}
+
+function removePrize(prizeId) {
+    if (!confirm('Вы уверены, что хотите удалить этот приз?')) {
+        return;
+    }
+    
+    fetch('/api/prizes/remove', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            prize_id: prizeId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка при удалении приза: ' + error);
+    });
+}
+
+// Prize List Management Functions
+function showCreatePrizeListModal() {
+    const modal = new bootstrap.Modal(document.getElementById('createPrizeListModal'));
+    modal.show();
+}
+
+function createPrizeList() {
+    const listId = document.getElementById('listId').value.trim();
+    const listName = document.getElementById('listName').value.trim();
+    const prizeContent = document.getElementById('prizeContent').value.trim();
+    
+    if (!listId || !listName) {
+        alert('ID списка и название обязательны');
+        return;
+    }
+    
+    fetch('/api/prize-lists/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            list_id: listId,
+            list_name: listName,
+            prize_content: prizeContent
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка при создании списка призов: ' + error);
+    });
+}
+
+function viewPrizeList(listId) {
+    fetch(`/api/prize-lists/${listId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Ошибка: ' + data.error);
+            return;
+        }
+        
+        const content = document.getElementById('prizeListContent');
+        content.innerHTML = `
+            <div class="mb-3">
+                <h6>Название: <strong>${data.metadata.name}</strong></h6>
+                <p class="text-muted">Количество призов: ${data.metadata.prize_count}</p>
+            </div>
+            <div class="border rounded p-3" style="background: var(--secondary-bg); max-height: 400px; overflow-y: auto;">
+                <pre class="mb-0">${data.content}</pre>
+            </div>
+        `;
+        
+        const modal = new bootstrap.Modal(document.getElementById('viewPrizeListModal'));
+        modal.show();
+    })
+    .catch(error => {
+        alert('Ошибка при загрузке списка призов: ' + error);
+    });
+}
+
+function editPrizeList(listId) {
+    fetch(`/api/prize-lists/${listId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Ошибка: ' + data.error);
+            return;
+        }
+        
+        document.getElementById('editListId').value = listId;
+        document.getElementById('editListName').value = data.metadata.name;
+        document.getElementById('editPrizeContent').value = data.content;
+        
+        const modal = new bootstrap.Modal(document.getElementById('editPrizeListModal'));
+        modal.show();
+    })
+    .catch(error => {
+        alert('Ошибка при загрузке списка призов: ' + error);
+    });
+}
+
+function updatePrizeList() {
+    const listId = document.getElementById('editListId').value;
+    const listName = document.getElementById('editListName').value.trim();
+    const prizeContent = document.getElementById('editPrizeContent').value.trim();
+    
+    if (!listName) {
+        alert('Название списка обязательно');
+        return;
+    }
+    
+    fetch(`/api/prize-lists/${listId}/update`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            list_name: listName,
+            prize_content: prizeContent
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка при обновлении списка призов: ' + error);
+    });
+}
+
+function removePrizeList(listId) {
+    if (!confirm('Вы уверены, что хотите удалить этот список призов?')) {
+        return;
+    }
+    
+    fetch(`/api/prize-lists/${listId}/remove`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Ошибка при удалении списка призов: ' + error);
+    });
+}
 </script>
 {% endblock %}

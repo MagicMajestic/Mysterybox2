@@ -14,7 +14,10 @@ from utils.database import (
     load_gifs, 
     load_prize_lists,
     save_giveaways,
-    save_prizes
+    save_prizes,
+    save_prize_lists,
+    save_prize_list_file,
+    load_prize_list_file
 )
 from utils.giveaway_logger import (
     get_recent_events,
@@ -325,7 +328,178 @@ def giveaways_list():
 def prizes_page():
     """Page showing all prizes"""
     prizes = load_prizes()
-    return render_template('prizes.html', prizes=prizes)
+    prize_lists = load_prize_lists()
+    return render_template('prizes.html', prizes=prizes, prize_lists=prize_lists)
+
+# API endpoints for prize management
+@app.route('/api/prizes/add', methods=['POST'])
+def api_add_prize():
+    """Add a new prize"""
+    try:
+        data = request.get_json()
+        prize_id = data.get('prize_id')
+        prize_name = data.get('prize_name')
+        prize_description = data.get('prize_description', '')
+        
+        if not prize_id or not prize_name:
+            return jsonify({'error': 'Prize ID и название обязательны'}), 400
+        
+        prizes = load_prizes()
+        
+        if prize_id in prizes:
+            return jsonify({'error': 'Приз с таким ID уже существует'}), 400
+        
+        prizes[prize_id] = {
+            'name': prize_name,
+            'description': prize_description,
+            'created_at': datetime.now().timestamp(),
+            'used': False
+        }
+        
+        save_prizes(prizes)
+        return jsonify({'success': True, 'message': 'Приз успешно добавлен'})
+        
+    except Exception as e:
+        return jsonify({'error': f'Ошибка при добавлении приза: {str(e)}'}), 500
+
+@app.route('/api/prizes/remove', methods=['POST'])
+def api_remove_prize():
+    """Remove a prize"""
+    try:
+        data = request.get_json()
+        prize_id = data.get('prize_id')
+        
+        if not prize_id:
+            return jsonify({'error': 'Prize ID обязателен'}), 400
+        
+        prizes = load_prizes()
+        
+        if prize_id not in prizes:
+            return jsonify({'error': 'Приз не найден'}), 404
+        
+        del prizes[prize_id]
+        save_prizes(prizes)
+        return jsonify({'success': True, 'message': 'Приз успешно удален'})
+        
+    except Exception as e:
+        return jsonify({'error': f'Ошибка при удалении приза: {str(e)}'}), 500
+
+@app.route('/api/prize-lists')
+def api_prize_lists():
+    """Get all prize lists"""
+    try:
+        prize_lists = load_prize_lists()
+        return jsonify(prize_lists)
+    except Exception as e:
+        return jsonify({'error': f'Ошибка при загрузке списков призов: {str(e)}'}), 500
+
+@app.route('/api/prize-lists/create', methods=['POST'])
+def api_create_prize_list():
+    """Create a new prize list"""
+    try:
+        data = request.get_json()
+        list_id = data.get('list_id')
+        list_name = data.get('list_name')
+        prize_content = data.get('prize_content', '')
+        
+        if not list_id or not list_name:
+            return jsonify({'error': 'ID списка и название обязательны'}), 400
+        
+        prize_lists = load_prize_lists()
+        
+        if list_id in prize_lists:
+            return jsonify({'error': 'Список с таким ID уже существует'}), 400
+        
+        # Save prize list content to file
+        save_prize_list_file(list_id, prize_content)
+        
+        # Save metadata
+        prize_count = len([line.strip() for line in prize_content.split('\n') if line.strip()])
+        prize_lists[list_id] = {
+            'name': list_name,
+            'created_at': datetime.now().timestamp(),
+            'prize_count': prize_count
+        }
+        
+        save_prize_lists(prize_lists)
+        return jsonify({'success': True, 'message': 'Список призов успешно создан'})
+        
+    except Exception as e:
+        return jsonify({'error': f'Ошибка при создании списка призов: {str(e)}'}), 500
+
+@app.route('/api/prize-lists/<list_id>')
+def api_get_prize_list(list_id):
+    """Get prize list content"""
+    try:
+        prize_lists = load_prize_lists()
+        
+        if list_id not in prize_lists:
+            return jsonify({'error': 'Список призов не найден'}), 404
+        
+        content = load_prize_list_file(list_id)
+        if content is None:
+            return jsonify({'error': 'Файл списка призов не найден'}), 404
+        
+        return jsonify({
+            'content': content,
+            'metadata': prize_lists[list_id]
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Ошибка при загрузке списка призов: {str(e)}'}), 500
+
+@app.route('/api/prize-lists/<list_id>/update', methods=['POST'])
+def api_update_prize_list(list_id):
+    """Update prize list content"""
+    try:
+        data = request.get_json()
+        list_name = data.get('list_name')
+        prize_content = data.get('prize_content', '')
+        
+        prize_lists = load_prize_lists()
+        
+        if list_id not in prize_lists:
+            return jsonify({'error': 'Список призов не найден'}), 404
+        
+        # Update content file
+        save_prize_list_file(list_id, prize_content)
+        
+        # Update metadata
+        prize_count = len([line.strip() for line in prize_content.split('\n') if line.strip()])
+        if list_name:
+            prize_lists[list_id]['name'] = list_name
+        prize_lists[list_id]['prize_count'] = prize_count
+        prize_lists[list_id]['updated_at'] = datetime.now().timestamp()
+        
+        save_prize_lists(prize_lists)
+        return jsonify({'success': True, 'message': 'Список призов успешно обновлен'})
+        
+    except Exception as e:
+        return jsonify({'error': f'Ошибка при обновлении списка призов: {str(e)}'}), 500
+
+@app.route('/api/prize-lists/<list_id>/remove', methods=['POST'])
+def api_remove_prize_list(list_id):
+    """Remove a prize list"""
+    try:
+        prize_lists = load_prize_lists()
+        
+        if list_id not in prize_lists:
+            return jsonify({'error': 'Список призов не найден'}), 404
+        
+        # Remove from metadata
+        del prize_lists[list_id]
+        save_prize_lists(prize_lists)
+        
+        # Remove file
+        try:
+            os.remove(f'data/prize_lists/{list_id}.txt')
+        except FileNotFoundError:
+            pass  # File already doesn't exist
+        
+        return jsonify({'success': True, 'message': 'Список призов успешно удален'})
+        
+    except Exception as e:
+        return jsonify({'error': f'Ошибка при удалении списка призов: {str(e)}'}), 500
 
 @app.route('/logs')
 def logs_page():
